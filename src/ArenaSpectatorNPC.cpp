@@ -202,19 +202,19 @@ void ArenaSpectatorNPC::ShowPage(Player* player, uint16 page, uint32 IsTop) {
 
     if (page > 0) {
         if (IsTop == 2)
-            AddGossipItemFor(player, 7, "<- Back", GOSSIP_SENDER_MAIN, NPC_SPECTATOR_ACTION_2V2_GAMES + page - 1);
+            AddGossipItemFor(player, 7, "<- 上一页", GOSSIP_SENDER_MAIN, NPC_SPECTATOR_ACTION_2V2_GAMES + page - 1);
         if (IsTop == 3)
-            AddGossipItemFor(player, 7, "<- Back", GOSSIP_SENDER_MAIN, NPC_SPECTATOR_ACTION_3V3_GAMES + page - 1);
+            AddGossipItemFor(player, 7, "<- 上一页", GOSSIP_SENDER_MAIN, NPC_SPECTATOR_ACTION_3V3_GAMES + page - 1);
         if (IsTop == 1)
-            AddGossipItemFor(player, 7, "<- Back", GOSSIP_SENDER_MAIN, NPC_SPECTATOR_ACTION_5V5_GAMES + page - 1);
+            AddGossipItemFor(player, 7, "<- 上一页", GOSSIP_SENDER_MAIN, NPC_SPECTATOR_ACTION_5V5_GAMES + page - 1);
     }
 
     if (hasNextPage) {
         if (IsTop == 2)
-            AddGossipItemFor(player, 7, "Next ->", GOSSIP_SENDER_MAIN, NPC_SPECTATOR_ACTION_2V2_GAMES + page + 1);
+            AddGossipItemFor(player, 7, "下一页 ->", GOSSIP_SENDER_MAIN, NPC_SPECTATOR_ACTION_2V2_GAMES + page + 1);
         if (IsTop == 3)
-            AddGossipItemFor(player, 7, "Next ->", GOSSIP_SENDER_MAIN, NPC_SPECTATOR_ACTION_3V3_GAMES + page + 1);
+            AddGossipItemFor(player, 7, "下一页 ->", GOSSIP_SENDER_MAIN, NPC_SPECTATOR_ACTION_3V3_GAMES + page + 1);
         if (IsTop == 1)
-            AddGossipItemFor(player, 7, "Next ->", GOSSIP_SENDER_MAIN, NPC_SPECTATOR_ACTION_5V5_GAMES + page + 1);
+            AddGossipItemFor(player, 7, "下一页 ->", GOSSIP_SENDER_MAIN, NPC_SPECTATOR_ACTION_5V5_GAMES + page + 1);
     }
 }
