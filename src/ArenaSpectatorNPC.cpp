@@ -98,6 +98,40 @@ std::string ArenaSpectatorNPC::GetMatchCount(uint8 type) {
     return std::to_string(i);
 }
 
+void ArenaSpectatorNPC::GetMatchInformation(Battleground* arena, Player* target, uint32& firstTeamId, std::string& firstTeamName, std::string& secondTeamName, uint16& mmr, uint16& mmrTwo) {
+    uint8 slot;
+
+    switch (arena->GetArenaType())
+    {
+        case ARENA_TYPE_2v2:
+            slot = 0;
+            break;
+        case ARENA_TYPE_3v3:
+            slot = 1;
+            break;
+        case ARENA_TYPE_5v5:
+            slot = 2;
+            break;
+        default:
+            return;
+    }
+
+    firstTeamId = target->GetArenaTeamId(slot);
+    firstTeamName = (sArenaTeamMgr->GetArenaTeamById(firstTeamId))->GetName();
+    Battleground::BattlegroundPlayerMap::const_iterator citr = arena->GetPlayers().begin();
+    for (; citr != arena->GetPlayers().end(); ++citr)
+    {
+        if (Player * plrs = ObjectAccessor::FindPlayer(citr->first)) {
+            if (plrs->GetArenaTeamId(slot) != firstTeamId) {
+                mmrTwo = arena->GetArenaMatchmakerRating(citr->second->GetBgTeamId());
+                secondTeamName = (sArenaTeamMgr->GetArenaTeamById(plrs->GetArenaTeamId(0)))->GetName();
+            } else if (plrs->GetArenaTeamId(slot) == firstTeamId) {
+                mmr = arena->GetArenaMatchmakerRating(citr->second->GetBgTeamId());
+            }
+        }
+    }
+}
+
 void ArenaSpectatorNPC::ShowPage(Player* player, uint16 page, uint32 IsTop) {
     uint32 firstTeamId = 0;
     uint16 TypeOne = 0;
@@ -110,6 +144,7 @@ void ArenaSpectatorNPC::ShowPage(Player* player, uint16 page, uint32 IsTop) {
     bool hasNextPage = false;
     const BattlegroundContainer& bgList = sBattlegroundMgr->GetBattlegroundList();
     BattlegroundContainer arenas;
+    uint16 currentPage;
 
     for (auto itr : bgList)
     {
@@ -132,46 +167,7 @@ void ArenaSpectatorNPC::ShowPage(Player* player, uint16 page, uint32 IsTop) {
             continue;
         }
 
-        if (arena->GetArenaType() == ARENA_TYPE_2v2) {
-            firstTeamId = target->GetArenaTeamId(0);
-            firstTeamName = (sArenaTeamMgr->GetArenaTeamById(firstTeamId))->GetName();
-            Battleground::BattlegroundPlayerMap::const_iterator citr = arena->GetPlayers().begin();
-            for (; citr != arena->GetPlayers().end(); ++citr)
-                if (Player * plrs = ObjectAccessor::FindPlayer(citr->first)) {
-                    if (plrs->GetArenaTeamId(0) != firstTeamId) {
-                        mmrTwo = arena->GetArenaMatchmakerRating(citr->second->GetBgTeamId());
-                        secondTeamName = (sArenaTeamMgr->GetArenaTeamById(plrs->GetArenaTeamId(0)))->GetName();
-                    } else if (plrs->GetArenaTeamId(0) == firstTeamId) {
-                        mmr = arena->GetArenaMatchmakerRating(citr->second->GetBgTeamId());
-                    }
-                }
-        } else if (arena->GetArenaType() == ARENA_TYPE_3v3) {
-            firstTeamId = target->GetArenaTeamId(1);
-            firstTeamName = (sArenaTeamMgr->GetArenaTeamById(firstTeamId))->GetName();
-            Battleground::BattlegroundPlayerMap::const_iterator citr = arena->GetPlayers().begin();
-            for (; citr != arena->GetPlayers().end(); ++citr)
-                if (Player * plrs = ObjectAccessor::FindPlayer(citr->first)) {
-                    if (plrs->GetArenaTeamId(1) != firstTeamId) {
-                        mmrTwo = arena->GetArenaMatchmakerRating(citr->second->GetBgTeamId());
-                        secondTeamName = (sArenaTeamMgr->GetArenaTeamById(plrs->GetArenaTeamId(1)))->GetName();
-                    } else if (plrs->GetArenaTeamId(1) == firstTeamId) {
-                        mmr = arena->GetArenaMatchmakerRating(citr->second->GetBgTeamId());
-                    }
-                }
-        } else if (arena->GetArenaType() == ARENA_TYPE_5v5) {
-            firstTeamId = target->GetArenaTeamId(2);
-            firstTeamName = (ObjectAccessor::FindConnectedPlayer((sArenaTeamMgr->GetArenaTeamById(firstTeamId))->GetCaptain()))->GetName();
-            Battleground::BattlegroundPlayerMap::const_iterator citr = arena->GetPlayers().begin();
-            for (; citr != arena->GetPlayers().end(); ++citr)
-                if (Player * plrs = ObjectAccessor::FindPlayer(citr->first)) {
-                    if (plrs->GetArenaTeamId(2) != firstTeamId) {
-                        mmrTwo = arena->GetArenaMatchmakerRating(citr->second->GetBgTeamId());
-                        secondTeamName = (sArenaTeamMgr->GetArenaTeamById(plrs->GetArenaTeamId(2)))->GetName();
-                    } else if (plrs->GetArenaTeamId(2) == firstTeamId) {
-                        mmr = arena->GetArenaMatchmakerRating(citr->second->GetBgTeamId());
-                    }
-                }
-        }
+        GetMatchInformation(arena, target, firstTeamId, firstTeamName, secondTeamName, mmr, mmrTwo);
 
         if (IsTop == 2 && arena->GetArenaType() == ARENA_TYPE_2v2) {
             TypeOne++;
@@ -189,7 +185,7 @@ void ArenaSpectatorNPC::ShowPage(Player* player, uint16 page, uint32 IsTop) {
             }
             if (TypeTwo >= page * GamesOnPage)
                 AddGossipItemFor(player, GOSSIP_ICON_BATTLE, GetGamesStringData(arena, mmr, mmrTwo, firstTeamName, secondTeamName), GOSSIP_SENDER_MAIN, NPC_SPECTATOR_ACTION_SELECTED_PLAYER + GetFirstPlayerGuid(arena).GetCounter());
-        } else if (IsTop == 1 && arena->GetArenaType() == ARENA_TYPE_5v5) {
+        } else if (IsTop == 5 && arena->GetArenaType() == ARENA_TYPE_5v5) {
             TypeThree++;
             if (TypeThree > (page + 1) * GamesOnPage) {
                 hasNextPage = true;
@@ -200,21 +196,28 @@ void ArenaSpectatorNPC::ShowPage(Player* player, uint16 page, uint32 IsTop) {
         }
     }
 
-    if (page > 0) {
-        if (IsTop == 2)
-            AddGossipItemFor(player, 7, "<- 上一页", GOSSIP_SENDER_MAIN, NPC_SPECTATOR_ACTION_2V2_GAMES + page - 1);
-        if (IsTop == 3)
-            AddGossipItemFor(player, 7, "<- 上一页", GOSSIP_SENDER_MAIN, NPC_SPECTATOR_ACTION_3V3_GAMES + page - 1);
-        if (IsTop == 1)
-            AddGossipItemFor(player, 7, "<- 上一页", GOSSIP_SENDER_MAIN, NPC_SPECTATOR_ACTION_5V5_GAMES + page - 1);
+    switch (IsTop)
+    {
+        case 2:
+            currentPage = NPC_SPECTATOR_ACTION_2V2_GAMES + page;
+            break;
+        case 3:
+            currentPage = NPC_SPECTATOR_ACTION_3V3_GAMES + page;
+            break;
+        case 5:
+            currentPage = NPC_SPECTATOR_ACTION_5V5_GAMES + page;
+            break;
+        default:
+            return;
     }
 
-    if (hasNextPage) {
-        if (IsTop == 2)
-            AddGossipItemFor(player, 7, "下一页 ->", GOSSIP_SENDER_MAIN, NPC_SPECTATOR_ACTION_2V2_GAMES + page + 1);
-        if (IsTop == 3)
-            AddGossipItemFor(player, 7, "下一页 ->", GOSSIP_SENDER_MAIN, NPC_SPECTATOR_ACTION_3V3_GAMES + page + 1);
-        if (IsTop == 1)
-            AddGossipItemFor(player, 7, "下一页 ->", GOSSIP_SENDER_MAIN, NPC_SPECTATOR_ACTION_5V5_GAMES + page + 1);
+    if (page > 0)
+    {
+        AddGossipItemFor(player, 7, "<- 返回", GOSSIP_SENDER_MAIN, currentPage - 1);
+    }
+
+    if (hasNextPage)
+    {
+        AddGossipItemFor(player, 7, "下一页 ->", GOSSIP_SENDER_MAIN, currentPage + 1);
     }
 }
