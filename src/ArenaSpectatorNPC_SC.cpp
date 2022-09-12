@@ -28,6 +28,23 @@
 #include "ScriptMgr.h"
 #include "World.h"
 
+class ArenaSpectatorNPC_BG : public BGScript
+{
+public:
+    ArenaSpectatorNPC_BG() : BGScript("ArenaSpectatorNPC_BGScript") { }
+
+    void OnBattlegroundCreate(Battleground* bg) {
+        if (bg->isArena())
+        {
+            sArenaSpectatorNPC->AddBGToMap(bg);
+        }
+    }
+
+    void OnBattlegroundDestroy(Battleground* bg) {
+        sArenaSpectatorNPC->RemoveBGFromMap(bg);
+    }
+};
+
 class ArenaSpectatorNPC_Creature : public CreatureScript
 {
 public:
@@ -57,17 +74,12 @@ public:
             OnGossipHello(player, creature);
         }
 
-        switch (action)
-        {
-         case NPC_SPECTATOR_ACTION_2V2_GAMES:
+        if (action >= NPC_SPECTATOR_ACTION_2V2_GAMES && action < NPC_SPECTATOR_ACTION_3V3_GAMES) {
             AddGossipItemFor(player, 11, "< 主菜单 >", GOSSIP_SENDER_MAIN, 100);
             AddGossipItemFor(player, 4, "刷新", GOSSIP_SENDER_MAIN, NPC_SPECTATOR_ACTION_2V2_GAMES);
             sArenaSpectatorNPC->ShowPage(player, action - NPC_SPECTATOR_ACTION_2V2_GAMES, ARENA_TYPE_2v2);
             SendGossipMenuFor(player, DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());
-            break;
-
-        }
-        if (action >= NPC_SPECTATOR_ACTION_3V3_GAMES && action < NPC_SPECTATOR_ACTION_5V5_GAMES) {
+        } else if (action >= NPC_SPECTATOR_ACTION_3V3_GAMES && action < NPC_SPECTATOR_ACTION_5V5_GAMES) {
             AddGossipItemFor(player, 11, "< 主菜单 >", GOSSIP_SENDER_MAIN, 100);
             AddGossipItemFor(player, 4, "刷新", GOSSIP_SENDER_MAIN, NPC_SPECTATOR_ACTION_3V3_GAMES);
             sArenaSpectatorNPC->ShowPage(player, action - NPC_SPECTATOR_ACTION_3V3_GAMES, ARENA_TYPE_3v3);
@@ -135,7 +147,8 @@ public:
     }
 };
 
-void AddArenaSpectatorNPCScripts()
+void AddSC_ArenaSpectatorNPC()
 {
     new ArenaSpectatorNPC_Creature();
+    new ArenaSpectatorNPC_BG();
 }

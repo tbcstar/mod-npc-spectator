@@ -1,3 +1,25 @@
+/*
+ *  Module for AzerothCore edited by Gozzim (https://github.com/Gozzim)
+ *  Original code:
+ *      https://github.com/Flameshot/TrinityCore/tree/Arena-Spectator
+ *      Committed by Flameshot (https://github.com/Flameshot)
+ *      Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ *      Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include "ArenaSpectatorNPC.h"
 #include "ArenaTeamMgr.h"
 #include "ScriptedGossip.h"
@@ -47,7 +69,7 @@ std::string ArenaSpectatorNPC::GetClassIconById(uint8 id) {
 }
 
 std::string ArenaSpectatorNPC::GetGamesStringData(Battleground* team, uint16 mmr, uint16 mmrTwo, std::string firstTeamName, std::string secondTeamName) {
-    std::string teamsMember[BG_TEAMS_COUNT];
+    std::string teamsMember[PVP_TEAMS_COUNT];
     uint32 firstTeamId = 0;
     for (Battleground::BattlegroundPlayerMap::const_iterator itr = team->GetPlayers().begin(); itr != team->GetPlayers().end(); ++itr)
         if (Player * player = ObjectAccessor::FindPlayer(itr->first)) {
@@ -85,10 +107,9 @@ ObjectGuid ArenaSpectatorNPC::GetFirstPlayerGuid(Battleground* team) {
 }
 
 std::string ArenaSpectatorNPC::GetMatchCount(uint8 type) {
-    const BattlegroundContainer& bgList = sBattlegroundMgr->GetBattlegroundList();
     uint16 i = 0;
 
-    for (auto itr : bgList)
+    for (auto& itr : _bgMap)
     {
         Battleground* bg = itr.second;
         if (BattlegroundMgr::IsArenaType(bg->GetBgTypeID()) && bg->GetArenaType() == type && bg->isRated())
@@ -142,22 +163,13 @@ void ArenaSpectatorNPC::ShowPage(Player* player, uint16 page, uint32 IsTop) {
     std::string firstTeamName = "";
     std::string secondTeamName = "";
     bool hasNextPage = false;
-    const BattlegroundContainer& bgList = sBattlegroundMgr->GetBattlegroundList();
-    BattlegroundContainer arenas;
     uint16 currentPage;
 
-    for (auto itr : bgList)
-    {
-        Battleground* bg = itr.second;
-        if (BattlegroundMgr::IsArenaType(bg->GetBgTypeID()))
-            arenas.insert(itr);
-    }
-
-    if (arenas.empty())
+    if (_bgMap.empty())
         return;
 
-    for (BattlegroundContainer::const_iterator itr = arenas.begin(); itr != arenas.end(); ++itr) {
-        Battleground* arena = itr->second;
+    for (auto& itr : _bgMap) {
+        Battleground* arena = itr.second;
         Player *target = ObjectAccessor::FindPlayer(GetFirstPlayerGuid(arena));
 
         if (!arena->GetPlayersSize())
@@ -220,4 +232,22 @@ void ArenaSpectatorNPC::ShowPage(Player* player, uint16 page, uint32 IsTop) {
     {
         AddGossipItemFor(player, 7, "下一页 ->", GOSSIP_SENDER_MAIN, currentPage + 1);
     }
+}
+
+void ArenaSpectatorNPC::AddBGToMap(Battleground* bg)
+{
+    if (!bg)
+        return;
+
+    _bgMap[bg->GetInstanceID()] = bg;
+}
+
+void ArenaSpectatorNPC::RemoveBGFromMap(Battleground* bg)
+{
+    _bgMap.erase(bg->GetInstanceID());
+}
+
+void ArenaSpectatorNPC::ClearBGMap()
+{
+    _bgMap.clear();
 }
